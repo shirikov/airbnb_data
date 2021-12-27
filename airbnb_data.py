@@ -57,6 +57,8 @@ def read_airbnb_data(data_url):
     
     adf = pd.read_csv(data_url, index_col=None, header=0)
     
+    # Drop variables unlikely to be useful in prediction
+    # or with a lot of missing values that are difficult to impute
     if 'listings.csv.gz' in data_url:
         adf = adf.drop(columns = [
             'listing_url', 'scrape_id', 'last_scraped', 'picture_url',
@@ -143,7 +145,7 @@ for i in range(0, prop_df.shape[0]):
     amenities_list.extend(ast.literal_eval(prop_df.amenities[i]))
 amenities_count = Counter(amenities_list)
 
-# Keep only amenities mentioned in at least 3000 listings
+# Keep amenities that are not mentioned too rarely or too frequently
 amenities_frequent = dict()
 for (key, value) in amenities_count.items():
    if value > 10000 and value < 80000 and not ('TV' in key):
@@ -226,16 +228,13 @@ prop_df = pd.get_dummies(prop_df, columns=['Month'], prefix='month')
 
 # Replace nans by zeros for bedrooms 
 prop_df['bedrooms'] = prop_df['bedrooms'].fillna(0)
-# impute: beds, bedrooms (well predicted by price), price
+# Impute beds and price (strongly correlated)
 # https://machinelearningmastery.com/iterative-imputation-for-missing-values-in-machine-learning/
 # https://scikit-learn.org/stable/modules/impute.html
 imp.fit(prop_df[['beds', 'bedrooms', 'price']])
 prop_df_imp = imp.transform(prop_df[['beds', 'bedrooms', 'price']])
 prop_df_imp = pd.DataFrame(prop_df_imp, columns = ['beds', 'bedrooms', 'price'])
-beds_missings = prop_df[prop_df['beds'].isnull()].index.tolist()
-gg = prop_df_imp.iloc[beds_missings]
-bedrooms_missings = prop_df[prop_df['bedrooms'].isnull()].index.tolist()
-hh = prop_df_imp.iloc[bedrooms_missings ]
+
 # Round imputed beds and bedrooms
 prop_df_imp[['beds', 'bedrooms']] = prop_df_imp[['beds', 'bedrooms']].round(0)
 prop_df[['beds', 'bedrooms', 'price']] = prop_df_imp[['beds', 'bedrooms', 'price']]
@@ -262,7 +261,7 @@ prop_df['review_scores_rating'] = np.where((prop_df['month_january'] == 1) |
                                            prop_df['review_scores_rating'] / 20, 
                                            prop_df['review_scores_rating'])
 
-# Save to csv
+# Save the cleaned-up data set to csv
 prop_df.drop(columns=[
     'description', 'neighborhood_overview', 'host_about', 
     'host_neighbourhood', 'amenities'
