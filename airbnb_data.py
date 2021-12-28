@@ -17,11 +17,6 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 sia = SentimentIntensityAnalyzer()
 imp = IterativeImputer(max_iter=10, random_state=42)
 
-import os
-os.chdir('Box Sync')
-os.chdir('Udacity DS Nanodegree')
-os.chdir('Airbnb')
-
 # Get the data
 # Scrape URLs to specific Airbnb data sets
 reqs = requests.get('http://insideairbnb.com/get-the-data.html')
